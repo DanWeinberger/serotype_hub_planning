@@ -1,0 +1,57 @@
+---
+title: "PneumoTRACE Serotype Report"
+author: "Dan Weinberger and Nate Grubaugh"
+date: "2025-04-13"
+format:
+  html:
+    theme: flatly
+  pdf:
+    documentclass: article
+---
+
+![](logo/logo.png){width=100px align=center}
+
+
+## Observed serotype frequencies in carriers
+
+### Children <5 years
+
+#### <2
+#### 2-5
+
+### Children 5-9 years
+
+### Adults 50-64 years
+
+### Adults 65+ years
+
+### Comparisons among age groups
+
+### Stratified by vaccine history (children)
+
+### Stratified by race/ethnicity
+
+### Stratified by viral test result
+
+
+## Nowcasting of serotype patterns in IPD
+
+### Children <5 years
+
+#### <2
+#### 2-5
+
+### Children 5-9 years
+
+### Adults 50-64 years
+
+### Adults 65+ years
+
+### Comparisons among age groups
+
+### Stratified by vaccine history (children)
+
+### Stratified by race/ethnicity
+
+### Stratified by viral test result
+
