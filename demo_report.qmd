@@ -2,56 +2,154 @@
 title: "PneumoTRACE Serotype Report"
 author: "Dan Weinberger and Nate Grubaugh"
 date: "2025-04-13"
-format:
-  html:
-    theme: flatly
-  pdf:
-    documentclass: article
+format: docx
 ---
 
 ![](logo/logo.png){width=100px align=center}
 
+## Data use terms
+The data presented in these reports is the property of Dan Weinberger and Nate Grubaugh at Yale School of Public Health and will be embargoed for a period of 18 months from the date of release of this report. During the embargo period, subscribers may use the data for internal planning purposes and for confidential presentations to external stakeholders (e.g., national immunization technical advisory groups). Following the embargo Subscribers may also use the outputs for derivative analyses, such as cost effectiveness analysis or comparative impact evaluations, that can be independently published following the embargo period, but the underlying data or basic descriptive statistics of the data themselves cannot be independently published by subscribers.  
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(forcats)
+library(readr)
+library(flextable)
+knitr::opts_chunk$set(dev = "ragg_png", echo=FALSE, message=FALSE, warning=FALSE)
+set.seed(2025)
+
+sim <- read_csv("simulated_colonization.csv")
+ipd <- read_csv("simulated_ipd.csv")
+
+
+# Compute summary tables for flextable
+prev_by_age <- sim %>% group_by(age_group) %>% summarize(n = n(), prevalence = mean(colonized))
+prev_by_age_race <- sim %>% group_by(age_group, race) %>% summarize(n = n(), prevalence = mean(colonized))
+```
+
+
+## Overall carriage prevalence by age and by age, and race/ethnicity
+
+
+```{r}
+flextable(prev_by_age)
+```
+
+
+```{r , fig.width=6, fig.height=4}
+ggplot(prev_by_age, aes(x = age_group, y = prevalence, fill = age_group)) +
+geom_col(show.legend = FALSE) +
+scale_y_continuous(labels = scales::percent_format(accuracy=1)) +
+labs(title='Carriage prevalence by age band', x='Age band', y='Prevalence')
+```
+
 
 ## Observed serotype frequencies in carriers
 
+
 ### Children <5 years
 
+
 #### <2
+```{r}
+sim %>% filter(age_group == '<2', colonized==1) %>%
+count(serotype) %>% arrange(desc(n)) %>% slice_head(n=15) %>% flextable()
+```
+
+
 #### 2-5
+```{r }
+sim %>% filter(age_group == '2-5', colonized==1) %>%
+count(serotype) %>% arrange(desc(n)) %>% slice_head(n=15) %>% flextable()
+```
+
 
 ### Children 5-9 years
+```{r }
+sim %>% filter(age_group == '5-9', colonized==1) %>%
+count(serotype) %>% arrange(desc(n)) %>% slice_head(n=15) %>% flextable()
+```
+
 
 ### Adults 50-64 years
+```{r }
+sim %>% filter(age_group == '50-64', colonized==1) %>%
+count(serotype) %>% arrange(desc(n)) %>% slice_head(n=15) %>% flextable()
+```
+
 
 ### Adults 65+ years
+```{r }
+sim %>% filter(age_group == '65+', colonized==1) %>%
+count(serotype) %>% arrange(desc(n)) %>% slice_head(n=15) %>% flextable()
+```
 
-### Comparisons among age groups
+### Comparisons of serotype frequencies among age groups
+```{r }
+top10 <- sim %>% filter(colonized==1) %>% count(serotype) %>% slice_max(n,n=10) %>% pull(serotype)
+comp <- sim %>% filter(colonized==1) %>% mutate(sero_top=if_else(serotype %in% top10, serotype, 'Other')) %>%
+count(age_group, sero_top) %>% group_by(age_group) %>% mutate(prop=n/sum(n)) %>% ungroup()
 
-### Stratified by vaccine history (children)
 
-### Stratified by race/ethnicity
+ggplot(comp, aes(x=age_group, y=prop, fill=sero_top)) +
+geom_col(position='stack') +
+scale_y_continuous(labels=scales::percent_format()) +
+labs(title='Composition of serotypes (top 10 + other) by age group', x='Age group', y='Proportion')
+```
 
-### Stratified by viral test result
 
+### Comparisons of serotype frequencies Stratified by vaccine history (children)
+```{r }
+comp_vax <- sim %>% filter(colonized==1, age_group %in% c('<2','2-5','5-9')) %>% mutate(vax=vaccine_history) %>%
+count(vax, serotype) %>% group_by(vax) %>% mutate(prop=n/sum(n)) %>% ungroup() %>% filter(serotype %in% top10)
+
+
+ggplot(comp_vax, aes(x=serotype, y=prop, fill=vax)) +
+geom_col(position='dodge') +
+scale_y_continuous(labels=scales::percent_format()) +
+labs(title='Serotype proportions by vaccine status', x='Serotype', y='Proportion')
+```
+
+
+### Comparisons of serotype frequencies Stratified by race/ethnicity
+```{r }
+comp_race <- sim %>% filter(colonized==1) %>% mutate(sero_top=if_else(serotype %in% top10, serotype, 'Other')) %>%
+count(race, sero_top) %>% group_by(race) %>% mutate(prop=n/sum(n)) %>% ungroup()
+
+
+ggplot(comp_race, aes(x=race, y=prop, fill=sero_top)) +
+geom_col(position='stack') +
+scale_y_continuous(labels=scales::percent_format()) +
+labs(title='Serotype composition by race/ethnicity', x='Race/ethnicity', y='Proportion')
+```
+
+
+### Comparisons of serotype frequencies Stratified by viral test result
+```{r}
+comp_viral <- sim %>% filter(colonized==1) %>% mutate(sero_top=if_else(serotype %in% top10, serotype, 'Other')) %>%
+count(viral_test, sero_top) %>% group_by(viral_test) %>% mutate(prop=n/sum(n)) %>% ungroup()
+
+
+ggplot(comp_viral, aes(x=viral_test, y=prop, fill=sero_top)) +
+geom_col(position='stack') +
+scale_y_continuous(labels=scales::percent_format()) +
+labs(title='Serotype composition by viral test result', x='Viral test', y='Proportion')
+```
 
 ## Nowcasting of serotype patterns in IPD
 
-### Children <5 years
+These are modeling outputs that combine the observed data with a published statistical model to generate predictions + uncertainty for frequency of serotypes causing invasive disease.
 
-#### <2
-#### 2-5
 
-### Children 5-9 years
+## Appendix: Table of serotype data by age
 
-### Adults 50-64 years
-
-### Adults 65+ years
-
-### Comparisons among age groups
-
-### Stratified by vaccine history (children)
-
-### Stratified by race/ethnicity
-
-### Stratified by viral test result
+To download as Csv. 
+```{r}
+out_data <- sim %>%
+  dplyr::select(id, age_group, race, vaccine_history, viral_test, year, serotype, colonized) %>%
+  write_csv('./export_sim.csv')
+```
 
